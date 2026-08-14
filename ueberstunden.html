@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arbeitszeitrechner</title>
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-hover: #4338CA;
+            --background: #F3F4F6;
+            --card-bg: #FFFFFF;
+            --text-main: #1F2937;
+            --text-muted: #4B5563;
+            --border: #E5E7EB;
+            --result-bg: #EEF2FF;
+            --result-border: #C7D2FE;
+            --result-text: #3730A3;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #16235c 0%, #1f033a 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(176, 17, 190, 0.35);
+            width: 100%;
+            max-width: 400px;
+            transition: transform 0.2s ease;
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--text-main);
+            margin-bottom: 24px;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        select,
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 15px;
+            color: var(--text-main);
+            background-color: #FAFAFA;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        select:focus,
+        input:focus {
+            border-color: var(--primary);
+            background-color: #FFF;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        button {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 14px;
+            margin-top: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .result {
+            margin-top: 24px;
+            padding: 16px;
+            background: var(--result-bg);
+            border: 1px solid var(--result-border);
+            border-radius: 10px;
+            font-weight: 600;
+            color: var(--result-text);
+            text-align: center;
+            font-size: 16px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card">
+        <h2>Arbeitszeitrechner</h2>
+
+        <div class="form-group">
+            <label for="option">Option wählen</label>
+            <select id="option" onchange="updateForm()">
+                <option value="1">1. Ein/Ausstech</option>
+                <option value="2">2. Will plus</option>
+                <option value="3">3. Abbauen</option>
+            </select>
+        </div>
+
+        <div id="group-einstech" class="form-group">
+            <label for="einstech">Einstechzeit (HH:MM)</label>
+            <input type="time" id="einstech" placeholder="z. B. 07:00">
+        </div>
+
+        <div id="group-ausstech" class="form-group">
+            <label for="ausstech">Ausstechzeit (HH:MM)</label>
+            <input type="time" id="ausstech" placeholder="z. B. 15:30">
+        </div>
+
+        <div id="group-stunden" class="form-group hidden">
+            <label for="stundenInput">Stunden / Minuten</label>
+            <input type="number" id="stundenInput" step="0.5" placeholder="Wert eingeben">
+        </div>
+
+        <button onclick="berechnen()">Berechnen</button>
+
+        <div class="result" id="ergebnis">Ergebnis: -</div>
+    </div>
+
+    <script>
+        function uhrzeitInMinuten(zeitStr) {
+            const parts = zeitStr.split(':');
+            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+
+        function minutenInUhrzeit(minuten) {
+            const std = Math.floor(minuten / 60) % 24;
+            const min = Math.round(minuten % 60);
+            return `${String(std).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+        }
+
+        function updateForm() {
+            const opt = document.getElementById('option').value;
+            const ausstechGroup = document.getElementById('group-ausstech');
+            const stundenGroup = document.getElementById('group-stunden');
+            const stundenLabel = document.querySelector('label[for="stundenInput"]');
+
+            if (opt === '1') {
+                ausstechGroup.classList.remove('hidden');
+                stundenGroup.classList.add('hidden');
+            } else if (opt === '2') {
+                ausstechGroup.classList.add('hidden');
+                stundenGroup.classList.remove('hidden');
+                stundenLabel.innerText = "Wie viele Netto-Stunden willst du heute arbeiten?";
+            } else if (opt === '3') {
+                ausstechGroup.classList.add('hidden');
+                stundenGroup.classList.remove('hidden');
+                stundenLabel.innerText = "Wie viele Stunden Pluszeit abbauen?";
+            }
+        }
+
+        function berechnen() {
+            const opt = document.getElementById('option').value;
+            const einstechStr = document.getElementById('einstech').value;
+
+            if (!einstechStr.includes(':')) {
+                document.getElementById('ergebnis').innerText = "Bitte gültige Einstechzeit (HH:MM) eingeben!";
+                return;
+            }
+
+            const einstechzeit = uhrzeitInMinuten(einstechStr);
+
+            const sollArbeitszeitNetto = 7 * 60; // 7 Stunden Soll-Arbeitszeit (420 Min)
+            const fruepause = 9 * 60;   // 09:00 Uhr
+            const spaetpause = 12 * 60; // 12:00 Uhr
+
+            let ergebnisText = "";
+
+            // OPTION 1: Ein/Ausstechzeit -> Berechnet Überstunden korrekt nach Abzug der Pausen
+            if (opt === '1') {
+                const ausstechStr = document.getElementById('ausstech').value;
+                if (!ausstechStr.includes(':')) {
+                    document.getElementById('ergebnis').innerText = "Bitte gültige Ausstechzeit (HH:MM) eingeben!";
+                    return;
+                }
+                const ausstechzeit = uhrzeitInMinuten(ausstechStr);
+
+                let bruttoZeit = ausstechzeit - einstechzeit;
+                let pausenAbzug = 0;
+
+                // Wenn du vor 09:00 eingestochen hast und nach 09:00 noch da bist -> 20 Min Pause abziehen
+                if (einstechzeit < fruepause && ausstechzeit > fruepause) pausenAbzug += 20;
+                // Wenn du vor 12:00 eingestochen hast und nach 12:00 noch da bist -> 30 Min Pause abziehen
+                if (einstechzeit < spaetpause && ausstechzeit > spaetpause) pausenAbzug += 30;
+
+                let nettoZeit = bruttoZeit - pausenAbzug;
+                let ueberstunden = nettoZeit - sollArbeitszeitNetto;
+
+                let absUeberstunden = Math.abs(ueberstunden);
+                let std = Math.floor(absUeberstunden / 60);
+                let min = absUeberstunden % 60;
+                let vorzeichen = ueberstunden < 0 ? "-" : "";
+                let dezimal = Math.round((ueberstunden / 60) * 100) / 100;
+
+                ergebnisText = `⏱️ ${vorzeichen}${std} Std. und ${min} Min. (${dezimal} Std.)`;
+            }
+
+            // OPTION 2: Gewünschte Netto-Stunden -> Wann muss ich gehen inklusive Pausenabsitzen?
+            else if (opt === '2') {
+                const wunschStunden = parseFloat(document.getElementById('stundenInput').value) || 0;
+                let verbleibendeWunschMinuten = wunschStunden * 60;
+                let aktuelleZeit = einstechzeit;
+
+                // Wir simulieren den Tag vorwärts, um feste Pausenzeiten exakt zu treffen
+                while (verbleibendeWunschMinuten > 0) {
+                    aktuelleZeit++;
+                    // Wenn wir genau auf die Frühpause treffen, "kostet" uns die Minute keine Arbeitszeit
+                    if (aktuelleZeit > fruepause && aktuelleZeit <= fruepause + 20) {
+                        continue;
+                    }
+                    // Wenn wir genau auf die Spätpause treffen, "kostet" uns die Minute keine Arbeitszeit
+                    if (aktuelleZeit > spaetpause && aktuelleZeit <= spaetpause + 30) {
+                        continue;
+                    }
+                    verbleibendeWunschMinuten--;
+                }
+
+                ergebnisText = `🚪 Ausstechzeit für ${wunschStunden}h Netto-Arbeit: ${minutenInUhrzeit(aktuelleZeit)}`;
+            }
+
+            // OPTION 3: Pluszeit abbauen -> Wann darf ich heute früher gehen?
+            else if (opt === '3') {
+                const abbauStunden = parseFloat(document.getElementById('stundenInput').value) || 0;
+                const abbauMinuten = abbauStunden * 60;
+
+                // Ziel-Nettoarbeitszeit für heute (7 Stunden minus Abbauzeit)
+                let zielNettoZeit = sollArbeitszeitNetto - abbauMinuten;
+                let aktuelleZeit = einstechzeit;
+
+                // Wir simulieren wieder vorwärts, bis die reduzierte Nettoarbeitszeit erreicht ist
+                while (zielNettoZeit > 0) {
+                    aktuelleZeit++;
+                    if (aktuelleZeit > fruepause && aktuelleZeit <= fruepause + 20) {
+                        continue;
+                    }
+                    if (aktuelleZeit > spaetpause && aktuelleZeit <= spaetpause + 30) {
+                        continue;
+                    }
+                    zielNettoZeit--;
+                }
+
+                document.getElementById('ergebnisText' !== "" ? ergebnisText : "");
+            }
+            document.getElementById('ergebnis').innerText = ergebnisText;
+        }
+    </script>
+</body>
+
+</html>
